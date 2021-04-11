@@ -156,12 +156,12 @@ class ZObjectParser(object):
     if 1 <= self._memory.version <= 3:
       if not (0 <= attrnum <= 31):
         raise ZObjectIllegalAttributeNumber
-      bf = BitField(self._memory[object_addr + (attrnum / 8)])
+      bf = BitField(self._memory[object_addr + (attrnum // 8)])
 
     elif 4 <= self._memory.version <= 5:
       if not (0 <= attrnum <= 47):
         raise ZObjectIllegalAttributeNumber
-      bf = BitField(self._memory[object_addr + (attrnum / 8)])
+      bf = BitField(self._memory[object_addr + (attrnum // 8)])
 
     else:
       raise ZObjectIllegalVersion

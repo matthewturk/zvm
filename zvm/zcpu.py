@@ -281,7 +281,13 @@ class ZCpu(object):
     def op_get_prop(self, objectnum, propnum):
         """Store in the given result an object's property value
         (either a byte or word)."""
-        val = self._objects.get_prop(objectnum, propnum)
+        # Note that some compiled inform files, particularly curses, include
+        # queries of properties of object 0, which doesn't exist.  Other
+        # interpreters have varying degrees of forgiveness of this.
+        if objectnum == 0:
+          val = 0
+        else:
+          val = self._objects.get_prop(objectnum, propnum)
         self._write_result(val)
 
     def op_get_prop_addr(self, *args):
@@ -388,9 +394,10 @@ class ZCpu(object):
         """TODO: Write docstring here."""
         raise ZCpuNotImplemented
 
-    def op_ret(self, *args):
-        """TODO: Write docstring here."""
-        raise ZCpuNotImplemented
+    def op_ret(self, val):
+        """Return from this routine with the given value."""
+        pc = self._stackmanager.finish_routine(val)
+        self._opdecoder.program_counter = pc
 
     def op_jump(self, offset):
         """Jump unconditionally to the given branch offset.  This
@@ -535,9 +542,10 @@ class ZCpu(object):
         store_address = array + 2*offset
         self._memory.write_word(store_address, value)
 
-    def op_storeb(self, *args):
-        """TODO: Write docstring here."""
-
+    def op_storeb(self, array, offset, value):
+        """Store the given 8-bit value at array+byte_index."""
+        store_address = array + offset
+        self._memory[store_address] = value
 
     def op_put_prop(self, object_number, property_number, value):
         """Set an object's property to the given value."""
@@ -695,9 +703,16 @@ class ZCpu(object):
         """TODO: Write docstring here."""
         raise ZCpuNotImplemented
 
-    def op_call_vn(self, *args):
-        """TODO: Write docstring here."""
-        raise ZCpuNotImplemented
+    def op_call_vn(self, routine_addr, *args):
+        """Call the routine r1, passing it any of r2, r3, r4 if defined, throw away result."""
+        addr = self._memory.packed_address(routine_addr)
+        return_addr = None
+        current_addr = self._opdecoder.program_counter
+        new_addr = self._stackmanager.start_routine(addr,
+                                                    return_addr,
+                                                    current_addr,
+                                                    args)
+        self._opdecoder.program_counter = new_addr
 
     def op_call_vn2(self, *args):
         """TODO: Write docstring here."""
