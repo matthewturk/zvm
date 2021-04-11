@@ -298,10 +298,11 @@ class ZObjectParser(object):
       raise ZObjectIllegalPropLength
 
 
-  def get_prop_addr_len(self, objectnum, propnum):
+  def get_prop_addr_len(self, objectnum, propnum, default = True):
     """Return address & length of value for property number PROPNUM of
     object number OBJECTNUM.  If object has no such property, then
-    return the address & length of the 'default' value for the property."""
+    return the address & length of the 'default' value for the
+    property, unless default = False, in which case return (0, 0)."""
 
     # start at the beginning of the object's proptable
     addr = self._get_proptable_addr(objectnum)
@@ -342,9 +343,34 @@ class ZObjectParser(object):
     else:
       raise ZObjectIllegalVersion
 
+    if default == False:
+      return (0, 0)
     # property list ran out, so return default propval instead.
     default_value_addr = self._get_default_property_addr(propnum)
     return (default_value_addr, 2)
+
+  def get_prop_len(self, addr):
+    """Returns the length of a property stored at a given address."""
+    # We subtract one from the address to get back to the property info.
+    if 1 <= self._memory.version <= 3:
+      bf = BitField(self._memory[addr - 1])
+      pnum = bf[4:0]
+      size = bf[7:5] + 1
+
+    elif 4 <= self._memory.version <= 5:
+      # This needs careful checking, as I believe it may be incorrect.
+      bf = BitField(self._memory[addr - 1])
+      pnum = bf[5:0]
+      if bf[7]:
+        bf2 = BitField(self._memory[addr])
+        addr += 1
+        size = bf2[5:0]
+      else:
+        if bf[6]:
+          size = 2
+        else:
+          size = 1
+    return size
 
 
   def get_all_properties(self, objectnum):

@@ -244,9 +244,14 @@ class ZCpu(object):
         """Bitwise AND between the two arguments."""
         self._write_result(a & b)
 
-    def op_test_attr(self, *args):
-        """TODO: Write docstring here."""
-        raise ZCpuNotImplemented
+    def op_test_attr(self, objectnum, propnum):
+        """Jump if an attribute exists on an object."""
+        if objectnum == 0:
+          addr = 0
+        else:
+          addr, size = self._objects.get_prop_addr_len(objectnum, propnum,
+                                                       False)
+        self._branch(addr != 0)
 
     def op_set_attr(self, *args):
         """TODO: Write docstring here."""
@@ -290,9 +295,10 @@ class ZCpu(object):
           val = self._objects.get_prop(objectnum, propnum)
         self._write_result(val)
 
-    def op_get_prop_addr(self, *args):
-        """TODO: Write docstring here."""
-        raise ZCpuNotImplemented
+    def op_get_prop_addr(self, objectnum, propnum):
+        """Return the address for a property, or 0 if it does not exist."""
+        addr, size = self._objects.get_prop_addr_len(objectnum, propnum, False)
+        self._write_result(addr)
 
     def op_get_next_prop(self, *args):
         """TODO: Write docstring here."""
@@ -364,9 +370,14 @@ class ZCpu(object):
         self._write_result(
             self._objects.get_parent(object_num))
 
-    def op_get_prop_len(self, *args):
-        """TODO: Write docstring here."""
-        raise ZCpuNotImplemented
+    def op_get_prop_len(self, property_addr):
+        """Get length of a property by its address. Return 0 for
+        address 0."""
+        if property_addr == 0:
+          size = 0
+        else:
+          size = self._objects.get_prop_len(property_addr)
+        self._write_result(size)
 
     def op_inc(self, variable):
         """Increment the given value."""
